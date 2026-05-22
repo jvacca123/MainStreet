@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: mainstreet
+    runtime: node
+    plan: free               # upgrade to starter ($7/mo) to get a persistent disk
+    buildCommand: npm run setup && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true  # Render auto-generates a secure random value
+      - key: DB_PATH
+        value: /data/mainstreet.db  # points to the persistent disk below
+    disk:
+      name: mainstreet-data
+      mountPath: /data
+      sizeGB: 1

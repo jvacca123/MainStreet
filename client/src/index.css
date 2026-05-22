@@ -1,0 +1,53 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { font-family: 'DM Sans', system-ui, sans-serif; color: theme(colors.ink); }
+  body { background: theme(colors.cream.DEFAULT); }
+  h1, h2, h3, h4 { font-family: 'Playfair Display', Georgia, serif; letter-spacing: -0.01em; }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-5 py-2.5 font-medium transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-primary { @apply btn bg-brand-800 text-cream hover:bg-brand-700 focus:ring-brand-500; }
+  .btn-amber   { @apply btn bg-amber-400 text-brand-900 hover:bg-amber-500 focus:ring-amber-500; }
+  .btn-ghost   { @apply btn bg-transparent text-brand-800 hover:bg-brand-50; }
+  .btn-outline { @apply btn border border-brand-200 bg-white text-brand-800 hover:border-brand-300 hover:bg-brand-50; }
+  .btn-sm      { @apply px-3 py-1.5 text-sm; }
+
+  .card { @apply rounded-2xl bg-white shadow-card; }
+  .card-pad { @apply p-6; }
+
+  .label { @apply block text-sm font-medium text-brand-900 mb-1.5; }
+  .input {
+    @apply w-full rounded-lg border border-brand-200 bg-white px-3.5 py-2.5 text-ink
+           placeholder:text-brand-400 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100;
+  }
+  .select { @apply input pr-9 bg-white; }
+  .textarea { @apply input resize-y min-h-[110px]; }
+
+  .badge {
+    @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold tracking-tight;
+  }
+  .badge-veteran   { @apply badge bg-[#0f2c4d] text-white; }
+  .badge-immigrant { @apply badge bg-[#c25e16] text-white; }
+  .badge-employee  { @apply badge bg-[#0e7c7b] text-white; }
+  .badge-first_gen { @apply badge bg-[#5b2f8a] text-white; }
+  .badge-community { @apply badge bg-brand-700 text-white; }
+  .badge-other     { @apply badge bg-brand-200 text-brand-900; }
+  .badge-open      { @apply badge bg-amber-100 text-amber-600; }
+
+  .badge-grade-A { @apply badge bg-[#22a06b] text-white; }
+  .badge-grade-B { @apply badge bg-[#5d9971] text-white; }
+  .badge-grade-C { @apply badge bg-amber-300 text-brand-900; }
+  .badge-grade-D { @apply badge bg-[#d97a3c] text-white; }
+  .badge-grade-F { @apply badge bg-[#b9442f] text-white; }
+
+  .container-wide { @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8; }
+  .container-narrow { @apply max-w-3xl mx-auto px-4 sm:px-6; }
+
+  .hero-gradient { background: linear-gradient(135deg, #1a3d2b 0%, #2d5a3d 60%, #3d7a52 100%); }
+}

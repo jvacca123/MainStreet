@@ -1,0 +1,27 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "dev: start full stack",
+      "type": "shell",
+      "command": "npm run dev",
+      "group": { "kind": "build", "isDefault": true },
+      "presentation": { "reveal": "always", "panel": "new" },
+      "problemMatcher": []
+    },
+    {
+      "label": "build: production",
+      "type": "shell",
+      "command": "npm run build",
+      "group": "build",
+      "presentation": { "reveal": "always" }
+    },
+    {
+      "label": "seed: reset database",
+      "type": "shell",
+      "command": "npm run reset",
+      "group": "test",
+      "presentation": { "reveal": "always" }
+    }
+  ]
+}

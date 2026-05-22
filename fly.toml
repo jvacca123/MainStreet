@@ -1,0 +1,36 @@
+# fly.toml — deploy with: fly launch && fly deploy
+app = "mainstreet"
+primary_region = "ord"      # Chicago — change to your nearest: iad, lax, dfw, etc.
+
+[build]
+
+[env]
+  NODE_ENV = "production"
+  PORT     = "8080"
+  DB_PATH  = "/data/mainstreet.db"
+
+[mounts]
+  source      = "mainstreet_data"
+  destination = "/data"
+
+[[services]]
+  protocol    = "tcp"
+  internal_port = 8080
+
+  [[services.ports]]
+    port     = 80
+    handlers = ["http"]
+
+  [[services.ports]]
+    port     = 443
+    handlers = ["tls", "http"]
+
+  [services.concurrency]
+    type       = "connections"
+    hard_limit = 25
+    soft_limit = 20
+
+  [[services.http_checks]]
+    interval = "30s"
+    timeout  = "5s"
+    path     = "/api/health"
