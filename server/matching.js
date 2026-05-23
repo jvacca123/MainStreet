@@ -77,7 +77,6 @@ function scorePair(buyer, seller) {
 function enrichSellerCard(seller) {
   return {
     id: seller.id,
-    fullName: seller.full_name,
     businessName: seller.business_name,
     industry: seller.industry,
     location: seller.location,
@@ -88,7 +87,6 @@ function enrichSellerCard(seller) {
     preferredBuyerType: seller.preferred_buyer_type,
     mentorshipWilling: !!seller.mentorship_willing,
     transferabilityScore: computeTransferabilityScore(seller),
-    valuation: estimatedValuation(seller),
   };
 }
 
@@ -97,14 +95,10 @@ function enrichBuyerCard(buyer) {
   try { preferredIndustries = JSON.parse(buyer.preferred_industries || '[]'); } catch { /* */ }
   return {
     id: buyer.id,
-    fullName: buyer.full_name,
     backgroundType: buyer.background_type,
     location: buyer.location,
-    experienceSummary: buyer.experience_summary,
-    capitalRange: buyer.capital_range,
     sbaEligible: !!buyer.sba_eligible,
     preferredIndustries,
-    motivation: buyer.motivation,
     wantsMentor: !!buyer.wants_mentor,
     readinessScore: computeReadinessScore(buyer),
   };

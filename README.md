@@ -14,7 +14,7 @@ npm run dev     # API on :3001  ·  Vite client on :5173
 
 Open <http://localhost:5173>.
 
-The database seeds automatically on first run.
+For local demo data, run `npm run seed:dev` after setup. The seed command refuses to run when `NODE_ENV=production`.
 
 ## Demo accounts
 
@@ -33,18 +33,19 @@ Four more seeded sellers (auto repair, landscaping, bookkeeping, hardware) and f
 
 ### Option A — Render.com (recommended, easiest)
 
-Render has a generous free tier. The `render.yaml` in this repo makes it one-click.
+The `render.yaml` in this repo is configured for a production-style Render web service with a persistent disk for SQLite.
 
 1. Push this repo to GitHub.
 2. Go to <https://render.com> → **New → Blueprint**.
 3. Connect your repo — Render reads `render.yaml` automatically.
 4. Click **Apply**. Render will:
-   - Install deps and build the React app (`npm run setup && npm run build`)
+   - Install deps and build the React app
    - Start the server (`npm start`)
-   - Generate a secure `JWT_SECRET` for you
-   - Mount a 1 GB persistent disk at `/data` for the SQLite database
+   - Generate secure `JWT_SECRET` and `REFRESH_TOKEN_SECRET` values
+   - Mount a 1 GB persistent disk at `/data`
+   - Store SQLite at `/data/mainstreet.db`
 
-> **Free tier note:** The free web service spins down after 15 min of inactivity (cold start ~30 s). Upgrade to Starter ($7/mo) to keep it always-on.
+> **Persistence note:** Render services use an ephemeral filesystem by default. The blueprint uses the Starter plan because persistent disks are not available on the free web-service tier. If you want to stay on a free/trial service, use a managed database via `DATABASE_URL` instead of local SQLite.
 
 ### Option B — Railway.app
 
@@ -54,7 +55,14 @@ Render has a generous free tier. The `render.yaml` in this repo makes it one-cli
    ```
    NODE_ENV=production
    JWT_SECRET=<generate a long random string>
+   REFRESH_TOKEN_SECRET=<generate a different long random string>
    DB_PATH=/data/mainstreet.db
+   APP_URL=https://your-public-url
+   SMTP_HOST=smtp.sendgrid.net
+   SMTP_PORT=587
+   SMTP_USER=apikey
+   SMTP_PASS=<your SMTP API key>
+   EMAIL_FROM=MainStreet <your verified sender>
    ```
 4. Add a **Volume** mounted at `/data` for the database.
 5. Railway reads `railway.json` for build/start commands automatically.
@@ -66,13 +74,14 @@ Render has a generous free tier. The `render.yaml` in this repo makes it one-cli
 fly auth login
 fly launch          # picks up fly.toml, asks you to confirm settings
 fly secrets set JWT_SECRET=$(openssl rand -hex 32)
+fly secrets set REFRESH_TOKEN_SECRET=$(openssl rand -hex 32)
 fly volumes create mainstreet_data --size 1 --region ord
 fly deploy
 ```
 
 ### Option D — Any VPS / Docker (coming soon)
 
-You can run `npm run build && npm start` on any Linux server. Point `DB_PATH` to a persistent path and set `JWT_SECRET`. Works on DigitalOcean, AWS EC2, Hetzner, etc.
+You can run `npm run build && npm start` on any Linux server. Point `DB_PATH` to a persistent path and set `JWT_SECRET`, `REFRESH_TOKEN_SECRET`, `APP_URL`, and real SMTP settings. Works on DigitalOcean, AWS EC2, Hetzner, etc.
 
 ---
 
@@ -81,19 +90,21 @@ You can run `npm run build && npm start` on any Linux server. Point `DB_PATH` to
 | Variable     | Required in prod | Default (dev)                   | Notes                                  |
 | ------------ | ---------------- | ------------------------------- | -------------------------------------- |
 | `JWT_SECRET` | **Yes**          | insecure dev fallback           | Use `openssl rand -hex 32` to generate |
+| `REFRESH_TOKEN_SECRET` | **Yes** | insecure dev fallback | Use a different generated value |
 | `PORT`       | No               | `3001`                          | Most platforms set this automatically  |
 | `NODE_ENV`   | No               | `development`                   | Set to `production` to enable SPA mode |
 | `DB_PATH`    | No               | `server/db/mainstreet.db`       | Point to a persistent disk in prod     |
-| `APP_URL`    | For email        | `http://localhost:5173`         | Public URL used to build links in emails |
-| `EMAIL_FROM` | For email        | `MainStreet <noreply@mainstreet.local>` | "From" header — must match your verified sender in SendGrid |
-| `SMTP_HOST`  | For email        | _(unset → console fallback)_    | `smtp.sendgrid.net`                    |
+| `APP_URL`    | **Yes in prod**  | `http://localhost:5173`         | Public HTTPS URL used to build links in emails |
+| `EMAIL_FROM` | **Yes in prod**  | `MainStreet <noreply@mainstreet.local>` | "From" header — must match your verified sender in SendGrid |
+| `SMTP_HOST`  | **Yes in prod**  | _(unset → console fallback)_    | `smtp.sendgrid.net`                    |
 | `SMTP_PORT`  | No               | `587`                           | Leave at 587 for SendGrid              |
-| `SMTP_USER`  | For email        | —                               | Literal string `apikey` for SendGrid   |
-| `SMTP_PASS`  | For email        | —                               | Your SendGrid API key (starts with `SG.`) |
+| `SMTP_USER`  | **Yes in prod**  | —                               | Literal string `apikey` for SendGrid   |
+| `SMTP_PASS`  | **Yes in prod**  | —                               | Your SendGrid API key (starts with `SG.`) |
+| `ALLOWED_ORIGINS` | No          | Local Vite origins in dev       | Comma-separated cross-origin browser origins |
 
 Copy `.env.example` to `.env` for local overrides (never commit `.env`).
 
-> Without the `SMTP_*` vars, the app logs would-be emails to stdout instead of sending — handy for local dev, fine for an initial deploy where you only want demo accounts. See the section below to wire up real email.
+> Without the SMTP vars, development logs would-be emails to stdout. Production startup refuses to continue until real email settings and a public HTTPS `APP_URL` are configured.
 
 ---
 
@@ -137,7 +148,7 @@ When you have a real domain (e.g. `mainstreet.co`), redo Sender Authentication a
 | `npm run build`   | Vite production build → `client/dist/`                    |
 | `npm start`       | Production: one process serves API + built React on $PORT |
 | `npm run setup`   | Install all deps (root + client + server)                 |
-| `npm run seed`    | Seed the database if empty                                |
+| `npm run seed:dev`| Seed local demo data if the database is empty             |
 | `npm run reset`   | Delete the DB and re-seed from scratch                    |
 
 ---
@@ -161,7 +172,7 @@ When you have a real domain (e.g. `mainstreet.co`), redo Sender Authentication a
 
 ## API reference
 
-All routes except `register`, `login`, and `health` require `Authorization: Bearer <token>`.
+Protected routes require `Authorization: Bearer <token>`. Profile, match, mentor, and connection routes also require a verified email address.
 
 | Method | Path                       | Description                                     |
 | ------ | -------------------------- | ----------------------------------------------- |
@@ -204,9 +215,9 @@ mainstreet/
 │
 ├── server/                        # Express API (port 3001 in dev, $PORT in prod)
 │   ├── db/
-│   │   ├── schema.sql             # 4 tables: users, seller_profiles, buyer_profiles, connections
-│   │   ├── index.js               # node:sqlite wrapper (mimics better-sqlite3 API)
-│   │   └── seed.js                # 5 sellers + 5 buyers, runs auto on first launch
+│   │   ├── migrations/            # Versioned SQL migrations
+│   │   ├── index.js               # Selects Postgres when DATABASE_URL is set, else SQLite
+│   │   └── migrate.js             # Idempotent migration runner
 │   ├── routes/                    # auth · sellers · buyers · matches+connections
 │   ├── middleware/auth.js         # JWT sign + verify + requireAuth + requireRole
 │   ├── scoring.js                 # Transferability + readiness scoring + valuation
@@ -227,7 +238,7 @@ mainstreet/
 - **Frontend**: React 18 · Vite · Tailwind CSS · React Router v6 · Axios
 - **Backend**: Node.js ≥22 · Express · JWT (jsonwebtoken) · bcrypt
 - **Database**: SQLite via Node's built-in `node:sqlite` (no native compile step)
-- **Auth**: JWT in localStorage, 14-day expiry, role-gated routes
+- **Auth**: short-lived access JWT in memory, rotating httpOnly refresh cookie, role-gated routes
 
 ---
 

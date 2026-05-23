@@ -2,13 +2,19 @@ services:
   - type: web
     name: mainstreet
     runtime: node
-    plan: free
+    plan: starter
     buildCommand: npm install && cd client && npm install --include=dev && npm run build && cd ../server && npm install
     startCommand: npm start
     healthCheckPath: /api/health
+    disk:
+      name: mainstreet-data
+      mountPath: /data
+      sizeGB: 1
     envVars:
       - key: NODE_ENV
         value: production
+      - key: DB_PATH
+        value: /data/mainstreet.db
       - key: JWT_SECRET
         generateValue: true
       - key: REFRESH_TOKEN_SECRET

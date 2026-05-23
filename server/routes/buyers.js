@@ -1,6 +1,6 @@
 const express = require('express');
 const db = require('../db');
-const { requireAuth, requireRole } = require('../middleware/auth');
+const { requireAuth, requireRole, requireVerifiedEmail } = require('../middleware/auth');
 const v = require('../validators');
 const { invalidateMatchesCache } = require('../matching');
 const {
@@ -19,7 +19,7 @@ const FIELDS = [
   'motivation',
 ];
 
-router.post('/profile', requireAuth, requireRole('buyer'), v.buyerProfile, async (req, res, next) => {
+router.post('/profile', requireAuth, requireVerifiedEmail, requireRole('buyer'), v.buyerProfile, async (req, res, next) => {
   try {
     const data = {};
     for (const k of FIELDS) data[k] = req.body[k];
@@ -50,7 +50,7 @@ router.post('/profile', requireAuth, requireRole('buyer'), v.buyerProfile, async
   } catch (err) { next(err); }
 });
 
-router.get('/profile', requireAuth, requireRole('buyer'), async (req, res, next) => {
+router.get('/profile', requireAuth, requireVerifiedEmail, requireRole('buyer'), async (req, res, next) => {
   try {
     const row = await db.prepare(
       'SELECT u.email, u.full_name, b.* FROM users u JOIN buyer_profiles b ON b.user_id = u.id WHERE u.id = ? AND u.deleted_at IS NULL'
@@ -96,7 +96,7 @@ router.get('/profile', requireAuth, requireRole('buyer'), async (req, res, next)
   } catch (err) { next(err); }
 });
 
-router.put('/checklist', requireAuth, requireRole('buyer'), v.buyerChecklist, async (req, res, next) => {
+router.put('/checklist', requireAuth, requireVerifiedEmail, requireRole('buyer'), v.buyerChecklist, async (req, res, next) => {
   try {
     const { id, done } = req.body;
     const row = await db.prepare('SELECT checklist_json FROM buyer_profiles WHERE user_id = ?').get(req.user.id);

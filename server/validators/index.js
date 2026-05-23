@@ -73,14 +73,14 @@ const v = {
 
   // ── Seller profile ───────────────────────────────────────────────────────
   sellerProfile: runValidations([
-    body('business_name').isString().trim().isLength({ min: 1, max: 200 }).escape(),
+    body('business_name').isString().trim().isLength({ min: 1, max: 200 }),
     body('industry').isString().trim().toLowerCase().isIn(INDUSTRIES),
     body('years_in_operation').toInt().isInt({ min: 0, max: 200 }),
     body('location').isString().trim().isLength({ min: 2, max: 120 }),
     body('revenue_range').isIn(REVENUE_RANGES),
     body('employee_count').toInt().isInt({ min: 0, max: 100000 }),
     body('retirement_timeline').isIn(TIMELINES),
-    body('reason_for_selling').optional({ checkFalsy: true }).isString().trim().isLength({ max: 2000 }).escape(),
+    body('reason_for_selling').optional({ checkFalsy: true }).isString().trim().isLength({ max: 2000 }),
     body('has_successor').toBoolean(),
     body('q_personal_relationships').toInt().isInt({ min: 1, max: 5 }),
     body('q_documented_procedures').toInt().isInt({ min: 0, max: 2 }),
@@ -99,7 +99,7 @@ const v = {
   buyerProfile: runValidations([
     body('background_type').isIn(BG_TYPES),
     body('location').isString().trim().isLength({ min: 2, max: 120 }),
-    body('experience_summary').optional({ checkFalsy: true }).isString().trim().isLength({ max: 2000 }).escape(),
+    body('experience_summary').optional({ checkFalsy: true }).isString().trim().isLength({ max: 2000 }),
     body('capital_range').isIn(CAPITAL_RANGES),
     body('sba_eligible').toBoolean(),
     body('credit_score_range').isIn(CREDIT_RANGES),
@@ -109,7 +109,7 @@ const v = {
     body('preferred_size').optional({ checkFalsy: true }).isIn(SIZES),
     body('willing_to_relocate').toBoolean(),
     body('wants_mentor').toBoolean(),
-    body('motivation').isString().trim().isLength({ min: 20, max: 500 }).escape(),
+    body('motivation').isString().trim().isLength({ min: 20, max: 500 }),
   ]),
   buyerChecklist: runValidations([
     body('id').isString().trim().isLength({ min: 1, max: 64 }),
@@ -119,7 +119,7 @@ const v = {
   // ── Connections ──────────────────────────────────────────────────────────
   connectionRequest: runValidations([
     body('targetUserId').toInt().isInt({ min: 1 }),
-    body('message').optional({ checkFalsy: true }).isString().trim().isLength({ max: 1000 }).escape(),
+    body('message').optional({ checkFalsy: true }).isString().trim().isLength({ max: 1000 }),
   ]),
 
   // ── Params ───────────────────────────────────────────────────────────────

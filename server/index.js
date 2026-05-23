@@ -19,6 +19,7 @@ const sellerRoutes  = require('./routes/sellers');
 const buyerRoutes   = require('./routes/buyers');
 const matchRoutes   = require('./routes/matches');
 const userRoutes    = require('./routes/users');
+const emailService  = require('./services/email');
 
 const IS_PROD = process.env.NODE_ENV === 'production';
 const PORT = Number(process.env.PORT) || 3001;
@@ -53,14 +54,17 @@ app.use(helmet({
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || (IS_PROD ? '' : 'http://localhost:5173,http://127.0.0.1:5173'))
   .split(',').map((s) => s.trim()).filter(Boolean);
 
-app.use(cors({
-  origin(origin, cb) {
-    if (!origin) return cb(null, true); // same-origin / curl
-    if (ALLOWED_ORIGINS.length === 0) return cb(null, true); // single-process prod (same origin)
-    if (ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
-    return cb(new Error('CORS: origin not allowed'));
-  },
-  credentials: true,
+app.use(cors((req, cb) => {
+  const sameOrigin = `${req.protocol}://${req.get('host')}`;
+  cb(null, {
+    origin(origin, originCb) {
+      if (!origin) return originCb(null, true); // same-origin / curl
+      if (ALLOWED_ORIGINS.includes(origin)) return originCb(null, true);
+      if (IS_PROD && origin === sameOrigin) return originCb(null, true);
+      return originCb(new Error('CORS: origin not allowed'));
+    },
+    credentials: true,
+  });
 }));
 
 // ── Body / cookie parsing ─────────────────────────────────────────────────
@@ -123,8 +127,9 @@ app.use(errorHandler);
 async function start() {
   try {
     await migrate.run({ logger });
+    emailService.validateProductionConfig();
   } catch (err) {
-    logger.error('Migration failed; refusing to start.', { error: err.message, stack: err.stack });
+    logger.error('Startup checks failed; refusing to start.', { error: err.message, stack: err.stack });
     process.exit(1);
   }
 

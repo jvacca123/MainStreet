@@ -121,7 +121,7 @@ export default function MatchCard({ match, viewerRole }) {
     <div className="card card-pad flex flex-col h-full hover:shadow-cardHover transition-shadow">
       <div className="flex items-start justify-between gap-2 mb-3">
         <div>
-          <h4 className="font-display text-lg text-brand-900 leading-tight">{match.fullName}</h4>
+          <h4 className="font-display text-lg text-brand-900 leading-tight">Buyer match</h4>
           <div className="text-xs text-brand-500">{match.location}</div>
         </div>
         <span className={`badge-${match.backgroundType}`}>
@@ -133,11 +133,13 @@ export default function MatchCard({ match, viewerRole }) {
         <span className={scoreColor(match.readinessScore)}>
           Readiness {match.readinessScore}
         </span>
-        <span className="text-xs text-brand-500 capitalize">Capital: {match.capitalRange}</span>
+        <span className="text-xs text-brand-500">Capital profile on file</span>
         {match.sbaEligible && <span className="badge bg-amber-100 text-amber-600">SBA eligible</span>}
       </div>
 
-      <p className="mb-4 text-sm text-brand-700 italic line-clamp-3">"{match.motivation}"</p>
+      <p className="mb-4 text-sm text-brand-700">
+        Profile details are shared after an introduction is requested.
+      </p>
 
       {match.reasons?.length > 0 && (
         <div className="mb-4 flex flex-wrap gap-1.5">

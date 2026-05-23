@@ -9,7 +9,7 @@ const { ForbiddenError, NotFoundError, ValidationError } = require('../utils/err
 
 const router = express.Router();
 
-router.get('/matches/:userId', requireAuth, v.intIdParam, async (req, res, next) => {
+router.get('/matches/:userId', requireAuth, requireVerifiedEmail, v.intIdParam, async (req, res, next) => {
   try {
     const requestedId = req.params.userId;
     if (req.user.id !== requestedId) throw new ForbiddenError('You can only view your own matches.');
@@ -58,7 +58,7 @@ router.post('/connections', requireAuth, requireVerifiedEmail, v.connectionReque
   } catch (err) { next(err); }
 });
 
-router.get('/connections', requireAuth, async (req, res, next) => {
+router.get('/connections', requireAuth, requireVerifiedEmail, async (req, res, next) => {
   try {
     const rows = await db.prepare(
       `SELECT c.id, c.buyer_id, c.seller_id, c.initiated_by, c.status, c.message, c.created_at,

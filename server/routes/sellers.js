@@ -1,6 +1,6 @@
 const express = require('express');
 const db = require('../db');
-const { requireAuth, requireRole } = require('../middleware/auth');
+const { requireAuth, requireRole, requireVerifiedEmail } = require('../middleware/auth');
 const v = require('../validators');
 const { invalidateMatchesCache } = require('../matching');
 const {
@@ -22,7 +22,7 @@ const FIELDS = [
   'preferred_buyer_type', 'mentorship_willing',
 ];
 
-router.post('/profile', requireAuth, requireRole('seller'), v.sellerProfile, async (req, res, next) => {
+router.post('/profile', requireAuth, requireVerifiedEmail, requireRole('seller'), v.sellerProfile, async (req, res, next) => {
   try {
     const data = {};
     for (const k of FIELDS) data[k] = req.body[k];
@@ -51,7 +51,7 @@ router.post('/profile', requireAuth, requireRole('seller'), v.sellerProfile, asy
   } catch (err) { next(err); }
 });
 
-router.get('/profile', requireAuth, requireRole('seller'), async (req, res, next) => {
+router.get('/profile', requireAuth, requireVerifiedEmail, requireRole('seller'), async (req, res, next) => {
   try {
     const row = await db.prepare(
       'SELECT u.email, u.full_name, s.* FROM users u JOIN seller_profiles s ON s.user_id = u.id WHERE u.id = ? AND u.deleted_at IS NULL'
@@ -96,7 +96,7 @@ router.get('/profile', requireAuth, requireRole('seller'), async (req, res, next
   } catch (err) { next(err); }
 });
 
-router.put('/roadmap', requireAuth, requireRole('seller'), v.sellerRoadmap, async (req, res, next) => {
+router.put('/roadmap', requireAuth, requireVerifiedEmail, requireRole('seller'), v.sellerRoadmap, async (req, res, next) => {
   try {
     const { id, status } = req.body;
     const row = await db.prepare('SELECT roadmap_json FROM seller_profiles WHERE user_id = ?').get(req.user.id);
@@ -112,7 +112,7 @@ router.put('/roadmap', requireAuth, requireRole('seller'), v.sellerRoadmap, asyn
   } catch (err) { next(err); }
 });
 
-router.get('/mentors', requireAuth, async (req, res, next) => {
+router.get('/mentors', requireAuth, requireVerifiedEmail, async (req, res, next) => {
   try {
     const real = await db.prepare(
       `SELECT u.full_name, s.business_name, s.industry, s.years_in_operation, s.location

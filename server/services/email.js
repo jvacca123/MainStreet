@@ -7,6 +7,7 @@ const logger = require('../utils/logger');
 
 const FROM = process.env.EMAIL_FROM || 'MainStreet <noreply@mainstreet.local>';
 const APP_URL = process.env.APP_URL || 'http://localhost:5173';
+const IS_PROD = process.env.NODE_ENV === 'production';
 
 let transporter = null;
 let transportName = 'console';
@@ -40,6 +41,39 @@ function getTransport() {
     logger.warn('[email] SMTP not configured — using console transport (no real emails will send)');
   }
   return transporter;
+}
+
+function validateProductionConfig() {
+  if (!IS_PROD) return;
+
+  const missing = [];
+  if (!process.env.SMTP_HOST) missing.push('SMTP_HOST');
+  if (!process.env.SMTP_USER) missing.push('SMTP_USER');
+  if (!process.env.SMTP_PASS) missing.push('SMTP_PASS');
+  if (!process.env.EMAIL_FROM) missing.push('EMAIL_FROM');
+  if (!process.env.APP_URL) missing.push('APP_URL');
+
+  let parsedAppUrl = null;
+  if (process.env.APP_URL) {
+    try { parsedAppUrl = new URL(process.env.APP_URL); }
+    catch { missing.push('valid APP_URL'); }
+  }
+
+  if (
+    parsedAppUrl &&
+    (parsedAppUrl.protocol !== 'https:' ||
+      ['localhost', '127.0.0.1', '::1'].includes(parsedAppUrl.hostname))
+  ) {
+    throw new Error('APP_URL must be the public https URL in production.');
+  }
+
+  if (process.env.EMAIL_FROM && process.env.EMAIL_FROM.includes('noreply@mainstreet.local')) {
+    throw new Error('EMAIL_FROM must be a verified sender in production.');
+  }
+
+  if (missing.length) {
+    throw new Error(`Missing production email configuration: ${missing.join(', ')}`);
+  }
 }
 
 async function send({ to, subject, text, html }) {
@@ -121,5 +155,6 @@ module.exports = {
   sendWelcomeEmail,
   sendPasswordResetEmail,
   sendConnectionRequestEmail,
+  validateProductionConfig,
   get transportName() { return transportName; },
 };

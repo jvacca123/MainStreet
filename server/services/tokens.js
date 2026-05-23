@@ -20,7 +20,7 @@ const ACCESS_TTL = '15m';
 const REFRESH_TTL_DAYS = 30;
 
 function hashToken(token) {
-  return crypto.createHash('sha256').update(token).digest('hex');
+  return crypto.createHmac('sha256', REFRESH_SECRET).update(token).digest('hex');
 }
 
 function signAccessToken(user) {
