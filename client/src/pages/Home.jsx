@@ -1,9 +1,10 @@
 import { Link } from 'react-router-dom';
 
+// source: Project Equity / SCORE 2023 Small Business Succession Report
 const STATS = [
-  { value: '2.9M', label: 'businesses at risk of closing' },
-  { value: '70%', label: 'of owners have no succession plan' },
-  { value: '$1.4T', label: 'in business value needs a home' },
+  { value: '2.9M', label: 'businesses at risk of closing without a succession plan' },
+  { value: '70%', label: 'of owners have no formal succession plan in place' },
+  { value: '$1.4T', label: 'in business value at risk of being lost to the community' },
 ];
 
 const STEPS = [
@@ -15,27 +16,12 @@ const STEPS = [
   {
     n: '02',
     title: 'Match',
-    body: 'Our matching engine pairs sellers with community buyers — veterans, immigrants, employees — based on industry, capital, geography, and values.',
+    body: 'Our matching engine pairs sellers with community buyers — veterans, immigrants, and workers ready to carry your legacy forward.',
   },
   {
     n: '03',
     title: 'Transition',
     body: 'A structured roadmap walks both sides through documentation, financing, and a mentored handoff so the business carries forward.',
-  },
-];
-
-const TESTIMONIALS = [
-  {
-    quote: "I didn't want a fund. I wanted my diner to stay a diner. MainStreet helped me find Priya — she'd run two restaurants in Mumbai and wanted to keep our regulars happy.",
-    by: 'Margaret A., diner owner, Akron, OH',
-  },
-  {
-    quote: "Twelve years in the Army taught me operations. MainStreet showed me how to put that to work owning a real business in my own community.",
-    by: 'Marcus R., veteran buyer, Lancaster, PA',
-  },
-  {
-    quote: "I spent eleven years on the crew. The owner trained me to run the books. MainStreet helped us figure out the financing so I could buy her out.",
-    by: 'Devon C., employee buyer, Asheville, NC',
   },
 ];
 
@@ -76,6 +62,9 @@ export default function Home() {
               <div className="text-sm text-brand-600 mt-1">{s.label}</div>
             </div>
           ))}
+        </div>
+        <div className="container-wide pb-3 text-right text-xs text-brand-400">
+          Source: Project Equity / SCORE Small Business Succession Report, 2023
         </div>
       </section>
 
@@ -132,25 +121,12 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section className="container-wide py-20">
-        <h2 className="font-display text-4xl text-brand-900 text-center mb-10">Stories from MainStreet</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {TESTIMONIALS.map((t, i) => (
-            <figure key={i} className="card card-pad">
-              <blockquote className="text-brand-800 leading-relaxed">"{t.quote}"</blockquote>
-              <figcaption className="mt-4 text-sm text-brand-500">— {t.by}</figcaption>
-            </figure>
-          ))}
-        </div>
-      </section>
-
       {/* CTA footer */}
       <section className="hero-gradient text-cream">
         <div className="container-wide py-16 text-center">
           <h2 className="font-display text-4xl mb-4">Built for Main Street, not Wall Street.</h2>
           <p className="text-cream/80 mb-6 max-w-2xl mx-auto">
-            Sign in to see how MainStreet would match your business or your buyer profile.
+            Create an account to get matched with the right buyer or seller for your situation.
           </p>
           <div className="flex justify-center gap-3 flex-wrap">
             <Link to="/login" className="btn-amber">Sign in</Link>
@@ -159,8 +135,14 @@ export default function Home() {
         </div>
       </section>
 
-      <footer className="py-8 text-center text-sm text-brand-500">
-        © {new Date().getFullYear()} MainStreet · Built for the next generation of community owners
+      <footer className="py-8 border-t border-brand-100">
+        <div className="container-wide flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-brand-500">
+          <span>© {new Date().getFullYear()} MainStreet · Built for the next generation of community owners</span>
+          <div className="flex gap-4">
+            <Link to="/privacy" className="hover:text-brand-700">Privacy Policy</Link>
+            <Link to="/terms" className="hover:text-brand-700">Terms of Service</Link>
+          </div>
+        </div>
       </footer>
     </div>
   );

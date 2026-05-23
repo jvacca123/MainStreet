@@ -40,7 +40,7 @@ export default function SellerOnboarding() {
       render: ({ data, update }) => (
         <>
           <Field label="Business name">
-            <input className="input" value={data.business_name || ''} onChange={(e) => update({ business_name: e.target.value })} placeholder="Alvarez Family Diner" />
+            <input className="input" value={data.business_name || ''} onChange={(e) => update({ business_name: e.target.value })} placeholder="e.g. Main Street Auto Repair" />
           </Field>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="Industry">
@@ -54,7 +54,7 @@ export default function SellerOnboarding() {
             </Field>
           </div>
           <Field label="Location" hint="City, State">
-            <input className="input" value={data.location || ''} onChange={(e) => update({ location: e.target.value })} placeholder="Akron, OH" />
+            <input className="input" value={data.location || ''} onChange={(e) => update({ location: e.target.value })} placeholder="e.g. Cleveland, OH" />
           </Field>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="Annual revenue range">
@@ -88,7 +88,7 @@ export default function SellerOnboarding() {
             </div>
           </Field>
           <Field label="Why are you selling?" hint="A few sentences is plenty.">
-            <textarea className="textarea" value={data.reason_for_selling || ''} onChange={(e) => update({ reason_for_selling: e.target.value })} placeholder="Retiring after 32 years. Want the business to stay in the neighborhood." />
+            <textarea className="textarea" value={data.reason_for_selling || ''} onChange={(e) => update({ reason_for_selling: e.target.value })} placeholder="A few sentences about why you're looking to transition the business." />
           </Field>
           <Field label="Do you have a successor in mind?">
             <div className="grid grid-cols-2 gap-2">

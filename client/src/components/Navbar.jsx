@@ -5,7 +5,7 @@ export default function Navbar() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const onMarketing = location.pathname === '/' || location.pathname === '/login' || location.pathname === '/register';
+  const onMarketing = ['/', '/login', '/register', '/forgot-password', '/reset-password', '/privacy', '/terms'].includes(location.pathname);
 
   return (
     <nav className={`sticky top-0 z-30 backdrop-blur ${onMarketing ? 'bg-cream/80' : 'bg-white/90'} border-b border-brand-100`}>

@@ -13,12 +13,23 @@ const BG_LABEL = {
   other: 'Career changer',
 };
 
+function LearningModuleCard({ module }) {
+  return (
+    <div className="card card-pad flex flex-col gap-2">
+      <div className="flex items-start justify-between gap-2">
+        <h4 className="font-display text-xl text-brand-900">{module.title}</h4>
+        <span className="badge bg-amber-100 text-amber-700 shrink-0">Coming soon</span>
+      </div>
+      <p className="text-sm text-brand-600">{module.blurb}</p>
+    </div>
+  );
+}
+
 export default function BuyerDashboard() {
   const { user } = useAuth();
   const [data, setData] = useState(null);
   const [matchList, setMatchList] = useState([]);
   const [error, setError] = useState(null);
-  const [openModule, setOpenModule] = useState(null);
 
   useEffect(() => {
     Promise.all([
@@ -37,7 +48,16 @@ export default function BuyerDashboard() {
     setData((d) => ({ ...d, checklist: res.checklist }));
   }
 
-  if (error) return <div className="container-wide py-10 text-red-700">{error}</div>;
+  if (error) {
+    return (
+      <div className="container-wide py-16 text-center">
+        <div className="text-4xl mb-4">⚠️</div>
+        <p className="text-red-700 mb-4">{error}</p>
+        <button onClick={() => window.location.reload()} className="btn-outline">Try again</button>
+      </div>
+    );
+  }
+
   if (!data) return <div className="container-wide py-10 text-brand-600">Loading dashboard…</div>;
 
   const { profile, readinessScore, grade, checklist, learningModules } = data;
@@ -76,9 +96,11 @@ export default function BuyerDashboard() {
               ))}
             </div>
           </div>
-          <blockquote className="mt-5 border-l-2 border-amber-300 pl-4 text-sm text-brand-700 italic">
-            "{profile.motivation}"
-          </blockquote>
+          {profile.motivation && (
+            <blockquote className="mt-5 border-l-2 border-amber-300 pl-4 text-sm text-brand-700 italic">
+              "{profile.motivation}"
+            </blockquote>
+          )}
         </div>
       </div>
 
@@ -96,7 +118,11 @@ export default function BuyerDashboard() {
           </div>
         </div>
         {matchList.length === 0 ? (
-          <div className="card card-pad text-brand-600">No matches yet. Check back as more owners join.</div>
+          <div className="card card-pad text-center py-12">
+            <div className="text-4xl mb-3">🔍</div>
+            <h3 className="font-display text-xl text-brand-900 mb-2">No matches yet</h3>
+            <p className="text-brand-600 text-sm">Matches appear as more owners join. Make sure your profile is complete to improve your matches.</p>
+          </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {matchList.map((m) => (
@@ -110,45 +136,22 @@ export default function BuyerDashboard() {
       <section>
         <div className="mb-4">
           <h2 className="font-display text-3xl text-brand-900">Learning center</h2>
-          <p className="text-brand-600 text-sm">Free modules built for first-time acquirers.</p>
+          <p className="text-brand-600 text-sm">Free modules for first-time acquirers — launching soon.</p>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {learningModules.map((m) => (
-            <button
-              key={m.id}
-              onClick={() => setOpenModule(m)}
-              className="card card-pad text-left hover:shadow-cardHover transition-shadow"
-            >
-              <h4 className="font-display text-xl text-brand-900 mb-1">{m.title}</h4>
-              <p className="text-sm text-brand-600 mb-3">{m.blurb}</p>
-              <div className="h-1.5 rounded-full bg-brand-100 overflow-hidden">
-                <div className="h-full bg-brand-500" style={{ width: `${m.progress}%` }} />
-              </div>
-              <div className="mt-2 text-xs text-brand-500">{m.progress}% complete</div>
-            </button>
-          ))}
-        </div>
-      </section>
-
-      {openModule && (
-        <div role="dialog" className="fixed inset-0 z-40 flex items-center justify-center bg-brand-900/60 p-4" onClick={() => setOpenModule(null)}>
-          <div className="card max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
-            <h3 className="font-display text-2xl text-brand-900 mb-2">{openModule.title}</h3>
-            <p className="text-brand-600 mb-4">
-              This module is in our content roadmap — full video and quiz content lands in the next release. For now, here's the outline.
-            </p>
-            <ul className="list-disc pl-5 text-sm text-brand-700 space-y-1 mb-4">
-              <li>Foundational concepts you need to evaluate a deal</li>
-              <li>A short worked example using a real industry</li>
-              <li>Common pitfalls and how to spot them</li>
-              <li>A quiz at the end to lock it in</li>
-            </ul>
-            <div className="flex justify-end">
-              <button onClick={() => setOpenModule(null)} className="btn-primary">Got it</button>
-            </div>
+        {learningModules && learningModules.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {learningModules.map((m) => (
+              <LearningModuleCard key={m.id} module={m} />
+            ))}
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="card card-pad text-center py-12">
+            <div className="text-4xl mb-3">📚</div>
+            <h3 className="font-display text-xl text-brand-900 mb-2">Learning center coming soon</h3>
+            <p className="text-brand-600 text-sm">Modules on valuation, SBA financing, and due diligence are in development.</p>
+          </div>
+        )}
+      </section>
     </div>
   );
 }

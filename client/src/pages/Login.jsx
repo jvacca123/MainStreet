@@ -5,8 +5,8 @@ import { useAuth } from '../context/AuthContext.jsx';
 export default function Login() {
   const { login } = useAuth();
   const nav = useNavigate();
-  const [email, setEmail] = useState('owner@mainstreet.com');
-  const [password, setPassword] = useState('demo1234');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
 
@@ -15,7 +15,7 @@ export default function Login() {
     setError(null);
     setBusy(true);
     try {
-      const user = await login(email, password);
+      const user = await login(email.trim().toLowerCase(), password);
       if (!user.hasProfile) nav(`/${user.role}/onboarding`);
       else nav(`/${user.role}/dashboard`);
     } catch (err) {
@@ -33,11 +33,26 @@ export default function Login() {
         <form onSubmit={submit} className="space-y-4">
           <div>
             <label className="label">Email</label>
-            <input className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" />
+            <input
+              className="input"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              autoComplete="email"
+              autoFocus
+            />
           </div>
           <div>
             <label className="label">Password</label>
-            <input className="input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="current-password" />
+            <input
+              className="input"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              autoComplete="current-password"
+            />
           </div>
           {error && (
             <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 px-4 py-3 text-sm">{error}</div>
@@ -47,13 +62,13 @@ export default function Login() {
           </button>
         </form>
 
-        <div className="mt-6 rounded-lg bg-cream-dark border border-brand-100 p-4 text-xs text-brand-600 space-y-1">
-          <div className="font-medium text-brand-800 mb-1">Demo accounts (password: <code>demo1234</code>)</div>
-          <div>Seller: <code>owner@mainstreet.com</code></div>
-          <div>Buyer: <code>buyer@mainstreet.com</code></div>
+        <div className="mt-4 text-right">
+          <Link to="/forgot-password" className="text-sm text-brand-600 hover:underline">
+            Forgot password?
+          </Link>
         </div>
 
-        <div className="mt-6 text-sm text-brand-600 text-center">
+        <div className="mt-4 text-sm text-brand-600 text-center">
           New here?{' '}
           <Link to="/register" className="text-brand-800 font-medium hover:underline">Create an account</Link>
         </div>

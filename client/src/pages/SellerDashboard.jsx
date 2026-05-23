@@ -23,7 +23,6 @@ export default function SellerDashboard() {
   const [matchList, setMatchList] = useState([]);
   const [mentors, setMentors] = useState([]);
   const [error, setError] = useState(null);
-  const [mentorOpen, setMentorOpen] = useState(null);
 
   useEffect(() => {
     Promise.all([
@@ -44,7 +43,15 @@ export default function SellerDashboard() {
     setData((d) => ({ ...d, roadmap: res.roadmap }));
   }
 
-  if (error) return <div className="container-wide py-10 text-red-700">{error}</div>;
+  if (error) {
+    return (
+      <div className="container-wide py-16 text-center">
+        <div className="text-4xl mb-4">⚠️</div>
+        <p className="text-red-700 mb-4">{error}</p>
+        <button onClick={() => window.location.reload()} className="btn-outline">Try again</button>
+      </div>
+    );
+  }
   if (!data) return <div className="container-wide py-10 text-brand-600">Loading dashboard…</div>;
 
   const { profile, transferabilityScore, grade, recommendations, valuation, roadmap } = data;
@@ -126,7 +133,11 @@ export default function SellerDashboard() {
           </div>
         </div>
         {matchList.length === 0 ? (
-          <div className="card card-pad text-brand-600">No matches yet. Check back as more buyers join.</div>
+          <div className="card card-pad text-center py-12">
+            <div className="text-4xl mb-3">👥</div>
+            <h3 className="font-display text-xl text-brand-900 mb-2">No matches yet</h3>
+            <p className="text-brand-600 text-sm">Check back as more buyers join the platform. Raising your Transferability Score will broaden your match pool.</p>
+          </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {matchList.map((m) => (
@@ -142,37 +153,29 @@ export default function SellerDashboard() {
           <h2 className="font-display text-3xl text-brand-900">Mentor network</h2>
           <p className="text-brand-600 text-sm">Owners who have sold and now help others through the process.</p>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {mentors.map((m, i) => (
-            <div key={i} className="card card-pad">
-              <h4 className="font-display text-lg text-brand-900">{m.name}</h4>
-              <div className="text-xs text-brand-500 capitalize mb-3">
-                {m.industry} · {m.yearsInBusiness} years · {m.location}
-              </div>
-              <p className="text-sm text-brand-700 mb-2"><strong className="text-brand-900">Sold:</strong> {m.soldBusiness}</p>
-              <p className="text-sm text-brand-600 mb-4">{m.blurb}</p>
-              <button onClick={() => setMentorOpen(m)} className="btn-outline btn-sm w-full">
-                Schedule a Call
-              </button>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {mentorOpen && (
-        <div role="dialog" className="fixed inset-0 z-40 flex items-center justify-center bg-brand-900/60 p-4" onClick={() => setMentorOpen(null)}>
-          <div className="card max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
-            <h3 className="font-display text-2xl text-brand-900 mb-2">Schedule with {mentorOpen.name}</h3>
-            <p className="text-brand-600 mb-4">
-              We'll email an intro within 24 hours. For the MVP, this is a placeholder — in production we'd open a calendar picker here.
-            </p>
-            <div className="flex justify-end gap-2">
-              <button onClick={() => setMentorOpen(null)} className="btn-outline">Close</button>
-              <button onClick={() => setMentorOpen(null)} className="btn-amber">Request intro</button>
-            </div>
+        {mentors.length === 0 ? (
+          <div className="card card-pad text-center py-12">
+            <div className="text-4xl mb-3">🤝</div>
+            <h3 className="font-display text-xl text-brand-900 mb-2">Mentor matching coming soon</h3>
+            <p className="text-brand-600 text-sm">We're building a network of sellers who have completed successful transitions. Check back soon.</p>
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {mentors.map((m, i) => (
+              <div key={i} className="card card-pad">
+                <h4 className="font-display text-lg text-brand-900">{m.name}</h4>
+                <div className="text-xs text-brand-500 capitalize mb-3">
+                  {m.industry} · {m.yearsInBusiness} years · {m.location}
+                </div>
+                <p className="text-sm text-brand-700 mb-4"><strong className="text-brand-900">Business:</strong> {m.soldBusiness}</p>
+                <button disabled className="btn-outline btn-sm w-full opacity-60 cursor-not-allowed">
+                  Mentor scheduling — coming soon
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
     </div>
   );
 }

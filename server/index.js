@@ -1,63 +1,138 @@
-// Load .env in dev/staging (no-op if file doesn't exist)
 require('dotenv').config();
 
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
+const compression = require('compression');
+const rateLimit = require('express-rate-limit');
+const cookieParser = require('cookie-parser');
 const path = require('path');
 const fs = require('fs');
 
-const { seedIfEmpty } = require('./db/seed');
+const logger = require('./services/logger');
+const { checkConnection } = require('./db');
+const { runMigrations } = require('./db/migrate');
+const { query } = require('./db');
+const errorHandler = require('./middleware/errorHandler');
+
 const authRoutes = require('./routes/auth');
 const sellerRoutes = require('./routes/sellers');
 const buyerRoutes = require('./routes/buyers');
 const matchRoutes = require('./routes/matches');
+const userRoutes = require('./routes/users');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 const IS_PROD = process.env.NODE_ENV === 'production';
 
-// In production the React build is served from this server — no CORS needed.
-// In dev the Vite proxy handles /api calls, but allow localhost origins for tooling.
+// ── Security headers ─────────────────────────────────────────────────────────
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'"],
+      styleSrc: ["'self'", 'https://fonts.googleapis.com'],
+      fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+      imgSrc: ["'self'", 'data:', 'https:'],
+      connectSrc: ["'self'"],
+    },
+  },
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+}));
+app.disable('x-powered-by');
+
+// ── CORS ─────────────────────────────────────────────────────────────────────
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map((o) => o.trim())
+  : ['http://localhost:5173', 'http://127.0.0.1:5173'];
+
 if (!IS_PROD) {
-  app.use(cors({ origin: ['http://localhost:5173', 'http://127.0.0.1:5173'] }));
+  app.use(cors({ origin: allowedOrigins, credentials: true }));
 }
 
-app.use(express.json({ limit: '256kb' }));
+// ── Body parsing ─────────────────────────────────────────────────────────────
+app.use(compression());
+app.use(express.json({ limit: '10kb' }));
+app.use(cookieParser());
 
-// ── API routes ──────────────────────────────────────────────────────────────
-app.get('/api/health', (req, res) => res.json({ ok: true, service: 'mainstreet-api', env: IS_PROD ? 'production' : 'development' }));
+// ── Global rate limit ────────────────────────────────────────────────────────
+app.use('/api', rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: { code: 'RATE_LIMITED', message: 'Too many requests. Try again later.' } },
+}));
+
+// ── Health check ─────────────────────────────────────────────────────────────
+app.get('/api/health', async (req, res) => {
+  try {
+    await checkConnection();
+    res.json({ status: 'ok', db: 'connected', uptime: process.uptime(), env: IS_PROD ? 'production' : 'development' });
+  } catch {
+    res.status(503).json({ status: 'error', db: 'disconnected' });
+  }
+});
+
+// ── API routes ────────────────────────────────────────────────────────────────
 app.use('/api/auth', authRoutes);
 app.use('/api/sellers', sellerRoutes);
 app.use('/api/buyers', buyerRoutes);
+app.use('/api/users', userRoutes);
 app.use('/api', matchRoutes);
 
 // API 404
-app.use('/api', (req, res) => res.status(404).json({ error: 'Not found' }));
+app.use('/api', (req, res) => res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Not found' } }));
 
-// ── Serve React build in production ─────────────────────────────────────────
+// ── Serve React build in production ──────────────────────────────────────────
 const CLIENT_DIST = path.join(__dirname, '..', 'client', 'dist');
 if (IS_PROD) {
   if (!fs.existsSync(CLIENT_DIST)) {
-    console.error('[mainstreet] ERROR: client/dist not found. Run "npm run build" before starting.');
+    logger.error('client/dist not found. Run "npm run build" before starting.');
     process.exit(1);
   }
-  app.use(express.static(CLIENT_DIST));
-  // SPA fallback — any non-API route serves index.html
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(CLIENT_DIST, 'index.html'));
-  });
+  app.use(express.static(CLIENT_DIST, { index: false }));
+  app.get('*', (req, res) => res.sendFile(path.join(CLIENT_DIST, 'index.html')));
 }
 
-// ── Error handler ────────────────────────────────────────────────────────────
-app.use((err, req, res, next) => {
-  console.error('[error]', err);
-  res.status(err.status || 500).json({ error: IS_PROD ? 'Server error' : err.message });
+// ── Error handler ─────────────────────────────────────────────────────────────
+app.use(errorHandler);
+
+// ── Unhandled rejections ──────────────────────────────────────────────────────
+process.on('unhandledRejection', (reason) => {
+  logger.error('Unhandled promise rejection', { reason: String(reason) });
+});
+process.on('uncaughtException', (err) => {
+  logger.error('Uncaught exception', { error: err.message, stack: err.stack });
+  process.exit(1);
 });
 
-// ── Boot ─────────────────────────────────────────────────────────────────────
-const seeded = seedIfEmpty();
-if (seeded) console.log('[mainstreet] Database seeded.');
+// ── Boot ──────────────────────────────────────────────────────────────────────
+async function start() {
+  try {
+    const db = require('./db');
+    await runMigrations(db);
+    logger.info('Database migrations complete');
+  } catch (err) {
+    logger.error('Migration failed', { error: err.message });
+    if (IS_PROD) process.exit(1);
+  }
 
-app.listen(PORT, () => {
-  console.log(`[mainstreet] Running on http://localhost:${PORT}  (${IS_PROD ? 'production' : 'development'})`);
-});
+  const server = app.listen(PORT, () => {
+    logger.info(`Server running on port ${PORT}`, { env: IS_PROD ? 'production' : 'development' });
+  });
+
+  // ── Graceful shutdown ─────────────────────────────────────────────────────
+  const shutdown = async (signal) => {
+    logger.info(`${signal} received, shutting down gracefully`);
+    server.close(async () => {
+      try { await require('./db').close(); } catch { /* */ }
+      process.exit(0);
+    });
+    setTimeout(() => process.exit(1), 10000);
+  };
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  process.on('SIGINT', () => shutdown('SIGINT'));
+}
+
+start();

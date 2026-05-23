@@ -67,10 +67,10 @@ export default function BuyerOnboarding() {
             </div>
           </Field>
           <Field label="Location" hint="City, State">
-            <input className="input" value={data.location || ''} onChange={(e) => update({ location: e.target.value })} placeholder="Lancaster, PA" />
+            <input className="input" value={data.location || ''} onChange={(e) => update({ location: e.target.value })} placeholder="e.g. Columbus, OH" />
           </Field>
           <Field label="Professional experience" hint="A few sentences about what you've done.">
-            <textarea className="textarea" value={data.experience_summary || ''} onChange={(e) => update({ experience_summary: e.target.value })} placeholder="12 years Army logistics, last 4 managing a 40-person motor pool. MBA from Penn State." />
+            <textarea className="textarea" value={data.experience_summary || ''} onChange={(e) => update({ experience_summary: e.target.value })} placeholder="A few sentences about your background, industry experience, and what you've managed." />
           </Field>
         </>
       ),
@@ -187,7 +187,7 @@ export default function BuyerOnboarding() {
             maxLength={500}
             value={data.motivation || ''}
             onChange={(e) => update({ motivation: e.target.value })}
-            placeholder="I want to buy a business that builds real things and employs people in my community…"
+            placeholder="Why do you want to own a business, and what kind of impact do you want to make in your community?"
           />
         </Field>
       ),

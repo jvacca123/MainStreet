@@ -1,4 +1,4 @@
-const { db } = require('./db');
+const { query, queryOne } = require('./db');
 const {
   computeTransferabilityScore,
   computeReadinessScore,
@@ -6,35 +6,28 @@ const {
   capitalMidpoint,
 } = require('./scoring');
 
-function getSeller(userId) {
-  return db
-    .prepare('SELECT u.id, u.email, u.full_name, s.* FROM users u JOIN seller_profiles s ON s.user_id = u.id WHERE u.id = ?')
-    .get(userId);
+async function getSeller(userId) {
+  return queryOne('SELECT u.id, u.email, u.full_name, s.* FROM users u JOIN seller_profiles s ON s.user_id = u.id WHERE u.id = $1', [userId]);
 }
 
-function getBuyer(userId) {
-  return db
-    .prepare('SELECT u.id, u.email, u.full_name, b.* FROM users u JOIN buyer_profiles b ON b.user_id = u.id WHERE u.id = ?')
-    .get(userId);
+async function getBuyer(userId) {
+  return queryOne('SELECT u.id, u.email, u.full_name, b.* FROM users u JOIN buyer_profiles b ON b.user_id = u.id WHERE u.id = $1', [userId]);
 }
 
-function listSellers() {
-  return db
-    .prepare('SELECT u.id, u.email, u.full_name, s.* FROM users u JOIN seller_profiles s ON s.user_id = u.id')
-    .all();
+async function listSellers() {
+  const { rows } = await query('SELECT u.id, u.email, u.full_name, s.* FROM users u JOIN seller_profiles s ON s.user_id = u.id WHERE u.deleted_at IS NULL');
+  return rows;
 }
 
-function listBuyers() {
-  return db
-    .prepare('SELECT u.id, u.email, u.full_name, b.* FROM users u JOIN buyer_profiles b ON b.user_id = u.id')
-    .all();
+async function listBuyers() {
+  const { rows } = await query('SELECT u.id, u.email, u.full_name, b.* FROM users u JOIN buyer_profiles b ON b.user_id = u.id WHERE u.deleted_at IS NULL');
+  return rows;
 }
 
 function scorePair(buyer, seller) {
   let score = 0;
   const reasons = [];
 
-  // Industry preference overlap
   let buyerIndustries = [];
   try { buyerIndustries = JSON.parse(buyer.preferred_industries || '[]'); } catch { /* */ }
   const sellerIndustry = (seller.industry || '').toLowerCase();
@@ -46,13 +39,12 @@ function scorePair(buyer, seller) {
     reasons.push('Industry match');
   }
 
-  // Location
   const buyerLoc = (buyer.location || '').toLowerCase();
   const sellerLoc = (seller.location || '').toLowerCase();
   const locationMatch =
     !!buyerLoc && !!sellerLoc &&
     (buyerLoc === sellerLoc ||
-      buyerLoc.split(',')[1]?.trim() === sellerLoc.split(',')[1]?.trim()); // same state
+      buyerLoc.split(',')[1]?.trim() === sellerLoc.split(',')[1]?.trim());
   if (locationMatch) {
     score += 20;
     reasons.push('Same region');
@@ -61,17 +53,14 @@ function scorePair(buyer, seller) {
     reasons.push('Buyer willing to relocate');
   }
 
-  // Preferred buyer type
   if (seller.preferred_buyer_type === buyer.background_type || seller.preferred_buyer_type === 'open') {
     score += 25;
     if (seller.preferred_buyer_type !== 'open') reasons.push('Preferred buyer type');
     else reasons.push('Seller open to all buyer types');
   }
 
-  // Capital vs valuation
   const val = estimatedValuation(seller);
   const cap = capitalMidpoint(buyer.capital_range);
-  // Down payment assumption: ~15-20%, so capital needs to be roughly that fraction of valuation low end
   const requiredDown = val.min * 0.15;
   if (cap >= requiredDown) {
     score += 15;
@@ -81,7 +70,6 @@ function scorePair(buyer, seller) {
     reasons.push('SBA-bridgeable capital');
   }
 
-  // Mentorship alignment
   if (seller.mentorship_willing && buyer.wants_mentor) {
     score += 10;
     reasons.push('Mentorship aligned');
@@ -126,10 +114,10 @@ function enrichBuyerCard(buyer) {
   };
 }
 
-function topMatchesForSeller(sellerUserId, limit = 5) {
-  const seller = getSeller(sellerUserId);
+async function topMatchesForSeller(sellerUserId, limit = 5) {
+  const seller = await getSeller(sellerUserId);
   if (!seller) return [];
-  const buyers = listBuyers();
+  const buyers = await listBuyers();
   return buyers
     .map((b) => {
       const { score, reasons } = scorePair(b, seller);
@@ -139,10 +127,10 @@ function topMatchesForSeller(sellerUserId, limit = 5) {
     .slice(0, limit);
 }
 
-function topMatchesForBuyer(buyerUserId, limit = 5) {
-  const buyer = getBuyer(buyerUserId);
+async function topMatchesForBuyer(buyerUserId, limit = 5) {
+  const buyer = await getBuyer(buyerUserId);
   if (!buyer) return [];
-  const sellers = listSellers();
+  const sellers = await listSellers();
   return sellers
     .map((s) => {
       const { score, reasons } = scorePair(buyer, s);
@@ -152,11 +140,11 @@ function topMatchesForBuyer(buyerUserId, limit = 5) {
     .slice(0, limit);
 }
 
-function topMatchesForUser(userId, limit = 5) {
-  const u = db.prepare('SELECT role FROM users WHERE id = ?').get(userId);
+async function topMatchesForUser(userId, limit = 5) {
+  const u = await queryOne('SELECT role FROM users WHERE id = $1', [userId]);
   if (!u) return { role: null, matches: [] };
-  if (u.role === 'seller') return { role: 'seller', matches: topMatchesForSeller(userId, limit) };
-  return { role: 'buyer', matches: topMatchesForBuyer(userId, limit) };
+  if (u.role === 'seller') return { role: 'seller', matches: await topMatchesForSeller(userId, limit) };
+  return { role: 'buyer', matches: await topMatchesForBuyer(userId, limit) };
 }
 
 module.exports = {

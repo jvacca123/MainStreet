@@ -15,8 +15,8 @@
     "start":  "NODE_ENV=production node server/index.js",
 
     "setup":  "npm install && cd client && npm install && cd ../server && npm install",
-    "seed":   "cd server && node db/seed.js",
-    "reset":  "rm -f server/db/mainstreet.db server/db/mainstreet.db-wal server/db/mainstreet.db-shm && npm run seed"
+    "seed:dev": "node scripts/seed.dev.js",
+    "reset":  "rm -f server/db/mainstreet.db server/db/mainstreet.db-wal server/db/mainstreet.db-shm && npm run seed:dev"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
