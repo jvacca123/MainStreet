@@ -5,7 +5,12 @@ export default function Navbar() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const onMarketing = location.pathname === '/' || location.pathname === '/login' || location.pathname === '/register';
+  const onMarketing = ['/', '/login', '/register', '/about', '/privacy', '/terms'].includes(location.pathname);
+
+  async function handleLogout() {
+    await logout();
+    navigate('/');
+  }
 
   return (
     <nav className={`sticky top-0 z-30 backdrop-blur ${onMarketing ? 'bg-cream/80' : 'bg-white/90'} border-b border-brand-100`}>
@@ -27,18 +32,17 @@ export default function Navbar() {
           ) : (
             <>
               <Link
-                to={user.hasProfile ? `/${user.role}/dashboard` : `/${user.role}/onboarding`}
+                to={!user.emailVerified ? '/verify-email'
+                    : !user.hasProfile ? `/${user.role}/onboarding`
+                    : `/${user.role}/dashboard`}
                 className="text-sm text-brand-800 hover:text-brand-600 font-medium"
               >
                 Dashboard
               </Link>
-              <span className="hidden sm:inline text-sm text-brand-500">
+              <Link to="/account" className="hidden sm:inline text-sm text-brand-500 hover:text-brand-800">
                 {user.fullName || user.email}
-              </span>
-              <button
-                onClick={() => { logout(); navigate('/'); }}
-                className="btn-outline btn-sm"
-              >
+              </Link>
+              <button onClick={handleLogout} className="btn-outline btn-sm">
                 Sign out
               </button>
             </>

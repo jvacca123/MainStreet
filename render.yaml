@@ -11,3 +11,17 @@ services:
         value: production
       - key: JWT_SECRET
         generateValue: true
+      # ── Email (SendGrid SMTP). Fill these in via the Render dashboard.
+      # Without them, emails are logged to server stdout instead of sent.
+      - key: SMTP_HOST
+        sync: false        # set to: smtp.sendgrid.net
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USER
+        sync: false        # set to literal string: apikey
+      - key: SMTP_PASS
+        sync: false        # set to your SendGrid API key (starts with SG.)
+      - key: EMAIL_FROM
+        sync: false        # e.g. MainStreet <you@example.com> — must match verified sender
+      - key: APP_URL
+        sync: false        # e.g. https://mainstreet.onrender.com (used in email links)

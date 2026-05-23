@@ -1,10 +1,5 @@
 import { Link } from 'react-router-dom';
-
-const STATS = [
-  { value: '2.9M', label: 'businesses at risk of closing' },
-  { value: '70%', label: 'of owners have no succession plan' },
-  { value: '$1.4T', label: 'in business value needs a home' },
-];
+import { HOMEPAGE_STATS } from '../config/stats.js';
 
 const STEPS = [
   {
@@ -21,21 +16,6 @@ const STEPS = [
     n: '03',
     title: 'Transition',
     body: 'A structured roadmap walks both sides through documentation, financing, and a mentored handoff so the business carries forward.',
-  },
-];
-
-const TESTIMONIALS = [
-  {
-    quote: "I didn't want a fund. I wanted my diner to stay a diner. MainStreet helped me find Priya — she'd run two restaurants in Mumbai and wanted to keep our regulars happy.",
-    by: 'Margaret A., diner owner, Akron, OH',
-  },
-  {
-    quote: "Twelve years in the Army taught me operations. MainStreet showed me how to put that to work owning a real business in my own community.",
-    by: 'Marcus R., veteran buyer, Lancaster, PA',
-  },
-  {
-    quote: "I spent eleven years on the crew. The owner trained me to run the books. MainStreet helped us figure out the financing so I could buy her out.",
-    by: 'Devon C., employee buyer, Asheville, NC',
   },
 ];
 
@@ -70,10 +50,11 @@ export default function Home() {
       {/* Stats */}
       <section className="border-y border-brand-100 bg-cream-dark">
         <div className="container-wide py-10 grid grid-cols-1 sm:grid-cols-3 gap-8">
-          {STATS.map((s) => (
+          {HOMEPAGE_STATS.map((s) => (
             <div key={s.label} className="text-center sm:text-left">
               <div className="font-display text-4xl text-brand-800 font-semibold">{s.value}</div>
               <div className="text-sm text-brand-600 mt-1">{s.label}</div>
+              <div className="text-xs text-brand-400 mt-1">Source: {s.source}</div>
             </div>
           ))}
         </div>
@@ -98,7 +79,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Side-by-side: For sellers / For buyers */}
+      {/* Side-by-side */}
       <section className="bg-cream-dark">
         <div className="container-wide py-20 grid grid-cols-1 md:grid-cols-2 gap-8">
           <div className="card card-pad border border-brand-100">
@@ -107,9 +88,9 @@ export default function Home() {
               Find a buyer who carries the work forward.
             </h3>
             <ul className="space-y-3 text-brand-700">
-              <li>• <strong>Transferability assessment</strong> tells you exactly what's holding back your sale price.</li>
+              <li>• <strong>Transferability assessment</strong> tells you what's holding back your sale price.</li>
               <li>• <strong>Readiness roadmap</strong> walks you from financials to handoff in eight steps.</li>
-              <li>• <strong>Matched buyers</strong> — veterans, immigrants, your own employees — vetted on community fit, not just capital.</li>
+              <li>• <strong>Matched buyers</strong> — veterans, immigrants, employees — vetted on community fit, not just capital.</li>
             </ul>
             <Link to="/register?role=seller" className="btn-primary mt-6">
               Start your owner profile
@@ -132,19 +113,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section className="container-wide py-20">
-        <h2 className="font-display text-4xl text-brand-900 text-center mb-10">Stories from MainStreet</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {TESTIMONIALS.map((t, i) => (
-            <figure key={i} className="card card-pad">
-              <blockquote className="text-brand-800 leading-relaxed">"{t.quote}"</blockquote>
-              <figcaption className="mt-4 text-sm text-brand-500">— {t.by}</figcaption>
-            </figure>
-          ))}
-        </div>
-      </section>
-
       {/* CTA footer */}
       <section className="hero-gradient text-cream">
         <div className="container-wide py-16 text-center">
@@ -158,10 +126,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-
-      <footer className="py-8 text-center text-sm text-brand-500">
-        © {new Date().getFullYear()} MainStreet · Built for the next generation of community owners
-      </footer>
     </div>
   );
 }

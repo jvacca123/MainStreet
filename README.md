@@ -84,8 +84,48 @@ You can run `npm run build && npm start` on any Linux server. Point `DB_PATH` to
 | `PORT`       | No               | `3001`                          | Most platforms set this automatically  |
 | `NODE_ENV`   | No               | `development`                   | Set to `production` to enable SPA mode |
 | `DB_PATH`    | No               | `server/db/mainstreet.db`       | Point to a persistent disk in prod     |
+| `APP_URL`    | For email        | `http://localhost:5173`         | Public URL used to build links in emails |
+| `EMAIL_FROM` | For email        | `MainStreet <noreply@mainstreet.local>` | "From" header — must match your verified sender in SendGrid |
+| `SMTP_HOST`  | For email        | _(unset → console fallback)_    | `smtp.sendgrid.net`                    |
+| `SMTP_PORT`  | No               | `587`                           | Leave at 587 for SendGrid              |
+| `SMTP_USER`  | For email        | —                               | Literal string `apikey` for SendGrid   |
+| `SMTP_PASS`  | For email        | —                               | Your SendGrid API key (starts with `SG.`) |
 
 Copy `.env.example` to `.env` for local overrides (never commit `.env`).
+
+> Without the `SMTP_*` vars, the app logs would-be emails to stdout instead of sending — handy for local dev, fine for an initial deploy where you only want demo accounts. See the section below to wire up real email.
+
+---
+
+## Sending real email (SendGrid)
+
+The app uses generic SMTP via nodemailer, so any SMTP provider works. SendGrid is the easiest free option (100 emails/day, no credit card). **You do not need to set up DNS or domain authentication** — Single Sender Verification is enough to start.
+
+### One-time setup (5 minutes)
+
+1. **Sign up** at <https://signup.sendgrid.com>.
+2. **Verify a single sender.** SendGrid dashboard → **Settings → Sender Authentication → Verify a Single Sender**. Use an email address you control (your personal Gmail is fine). Click the verification link SendGrid emails you.
+3. **Create an API key.** **Settings → API Keys → Create API Key** → name it `mainstreet-prod` → choose **Restricted Access** → grant **only** the "Mail Send" permission → copy the key (you only see it once — starts with `SG.`).
+4. **Set env vars** in your host (Render dashboard → your service → Environment):
+   ```
+   SMTP_HOST=smtp.sendgrid.net
+   SMTP_PORT=587
+   SMTP_USER=apikey
+   SMTP_PASS=SG.your-api-key-here
+   EMAIL_FROM=MainStreet <the-email-you-verified@example.com>
+   APP_URL=https://your-app.onrender.com
+   ```
+   `SMTP_USER` is the literal string `apikey`, not your username. `EMAIL_FROM` must use the exact address you verified in step 2 or SendGrid will reject the send.
+5. Save — Render redeploys automatically. Register a test account on your live site; you should receive a verification email within seconds.
+
+### Upgrading later: your own domain
+
+When you have a real domain (e.g. `mainstreet.co`), redo Sender Authentication as **Domain Authentication** instead of Single Sender. That's the screen that asks you to paste CNAME records into your DNS — and it only works once you actually own the domain. Then change `EMAIL_FROM` to `MainStreet <hello@mainstreet.co>` and you're done.
+
+### Troubleshooting
+
+- **Emails not arriving:** check server logs. If you see `[email/console] Would have sent email`, your SMTP env vars aren't loaded. If you see an SMTP auth error, double-check `SMTP_USER=apikey` (literal) and that `SMTP_PASS` is the full key including the `SG.` prefix.
+- **Emails landing in spam:** expected with Single Sender Verification because the From address (your Gmail) doesn't match the actual sender (SendGrid). Move to Domain Authentication on a real domain to fix.
 
 ---
 

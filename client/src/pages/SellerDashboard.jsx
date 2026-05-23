@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { sellers, matches } from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import ScoreGauge from '../components/ScoreGauge.jsx';
 import RoadmapChecklist from '../components/RoadmapChecklist.jsx';
 import MatchCard from '../components/MatchCard.jsx';
+import EmptyState from '../components/EmptyState.jsx';
 
 function fmt(n) {
   if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`;
@@ -23,29 +25,44 @@ export default function SellerDashboard() {
   const [matchList, setMatchList] = useState([]);
   const [mentors, setMentors] = useState([]);
   const [error, setError] = useState(null);
-  const [mentorOpen, setMentorOpen] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
     Promise.all([
       sellers.getProfile(),
       matches.forUser(user.id),
       sellers.mentors(),
     ])
       .then(([profile, m, mt]) => {
+        if (cancelled) return;
         setData(profile);
         setMatchList(m.matches || []);
         setMentors(mt.mentors || []);
       })
-      .catch((err) => setError(err.message));
+      .catch((err) => { if (!cancelled) setError(err.message); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
   }, [user.id]);
 
   async function setRoadmap(id, status) {
-    const res = await sellers.updateRoadmap(id, status);
-    setData((d) => ({ ...d, roadmap: res.roadmap }));
+    try {
+      const res = await sellers.updateRoadmap(id, status);
+      setData((d) => ({ ...d, roadmap: res.roadmap }));
+    } catch (err) {
+      setError(err.message);
+    }
   }
 
-  if (error) return <div className="container-wide py-10 text-red-700">{error}</div>;
-  if (!data) return <div className="container-wide py-10 text-brand-600">Loading dashboard…</div>;
+  if (loading) return <div className="container-wide py-12 text-center text-brand-500">Loading your dashboard…</div>;
+  if (error) return (
+    <div className="container-wide py-12">
+      <EmptyState icon="⚠︎" title="We couldn't load your dashboard" subtitle={error}
+        cta={{ to: '/seller/onboarding', label: 'Open onboarding' }} />
+    </div>
+  );
+  if (!data) return null;
 
   const { profile, transferabilityScore, grade, recommendations, valuation, roadmap } = data;
 
@@ -59,7 +76,7 @@ export default function SellerDashboard() {
         </p>
       </header>
 
-      {/* Top row: Score + Valuation */}
+      {/* Score + Valuation */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         <div className="card card-pad lg:col-span-1 flex flex-col items-center">
           <ScoreGauge score={transferabilityScore} grade={grade} label="Transferability Score" sub="How sale-ready your business is" />
@@ -89,9 +106,13 @@ export default function SellerDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
         <div className="card card-pad">
           <h3 className="font-display text-2xl text-brand-900 mb-1">Raise your score</h3>
-          <p className="text-brand-600 text-sm mb-5">Top {recommendations.length} actions, in priority order.</p>
+          <p className="text-brand-600 text-sm mb-5">
+            {recommendations.length > 0
+              ? `Top ${recommendations.length} actions, in priority order.`
+              : 'Your business is in great shape. Keep going on the roadmap.'}
+          </p>
           {recommendations.length === 0 ? (
-            <div className="text-brand-600 text-sm">Your business is in great shape. Keep going on the roadmap →</div>
+            <div className="text-brand-600 text-sm">No outstanding actions — well done.</div>
           ) : (
             <ol className="space-y-4">
               {recommendations.map((r, i) => (
@@ -122,16 +143,23 @@ export default function SellerDashboard() {
         <div className="flex items-end justify-between mb-4">
           <div>
             <h2 className="font-display text-3xl text-brand-900">Matched buyers</h2>
-            <p className="text-brand-600 text-sm">{matchList.length} community buyers fit your preferences.</p>
+            <p className="text-brand-600 text-sm">
+              {matchList.length > 0
+                ? `${matchList.length} community ${matchList.length === 1 ? 'buyer fits' : 'buyers fit'} your preferences.`
+                : "We'll surface buyers here as they join."}
+            </p>
           </div>
         </div>
         {matchList.length === 0 ? (
-          <div className="card card-pad text-brand-600">No matches yet. Check back as more buyers join.</div>
+          <EmptyState
+            icon="✦"
+            title="No buyer matches yet"
+            subtitle="We surface buyers as they sign up and complete their profiles. Sharpen yours in the meantime and your matches will improve."
+            cta={{ to: '/seller/onboarding', label: 'Refine your profile' }}
+          />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {matchList.map((m) => (
-              <MatchCard key={m.id} match={m} viewerRole="seller" />
-            ))}
+            {matchList.map((m) => <MatchCard key={m.id} match={m} viewerRole="seller" />)}
           </div>
         )}
       </section>
@@ -140,39 +168,35 @@ export default function SellerDashboard() {
       <section>
         <div className="mb-4">
           <h2 className="font-display text-3xl text-brand-900">Mentor network</h2>
-          <p className="text-brand-600 text-sm">Owners who have sold and now help others through the process.</p>
+          <p className="text-brand-600 text-sm">Owners who opted into post-sale mentorship.</p>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {mentors.map((m, i) => (
-            <div key={i} className="card card-pad">
-              <h4 className="font-display text-lg text-brand-900">{m.name}</h4>
-              <div className="text-xs text-brand-500 capitalize mb-3">
-                {m.industry} · {m.yearsInBusiness} years · {m.location}
+        {mentors.length === 0 ? (
+          <EmptyState
+            icon="✿"
+            title="No mentors available yet"
+            subtitle="As more owners complete their journey and opt into mentorship, they'll appear here."
+          />
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {mentors.map((m, i) => (
+              <div key={i} className="card card-pad">
+                <h4 className="font-display text-lg text-brand-900">{m.name}</h4>
+                <div className="text-xs text-brand-500 capitalize mb-3">
+                  {m.industry} · {m.yearsInBusiness} years · {m.location}
+                </div>
+                <p className="text-sm text-brand-700 mb-2"><strong className="text-brand-900">Sold:</strong> {m.soldBusiness}</p>
+                <button disabled className="btn-outline btn-sm w-full opacity-60 cursor-not-allowed" title="Scheduling launches soon">
+                  Schedule a Call · Coming soon
+                </button>
               </div>
-              <p className="text-sm text-brand-700 mb-2"><strong className="text-brand-900">Sold:</strong> {m.soldBusiness}</p>
-              <p className="text-sm text-brand-600 mb-4">{m.blurb}</p>
-              <button onClick={() => setMentorOpen(m)} className="btn-outline btn-sm w-full">
-                Schedule a Call
-              </button>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </section>
 
-      {mentorOpen && (
-        <div role="dialog" className="fixed inset-0 z-40 flex items-center justify-center bg-brand-900/60 p-4" onClick={() => setMentorOpen(null)}>
-          <div className="card max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
-            <h3 className="font-display text-2xl text-brand-900 mb-2">Schedule with {mentorOpen.name}</h3>
-            <p className="text-brand-600 mb-4">
-              We'll email an intro within 24 hours. For the MVP, this is a placeholder — in production we'd open a calendar picker here.
-            </p>
-            <div className="flex justify-end gap-2">
-              <button onClick={() => setMentorOpen(null)} className="btn-outline">Close</button>
-              <button onClick={() => setMentorOpen(null)} className="btn-amber">Request intro</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <div className="mt-8 text-sm text-brand-500 flex justify-end">
+        <Link to="/account" className="hover:text-brand-800">Account settings</Link>
+      </div>
     </div>
   );
 }

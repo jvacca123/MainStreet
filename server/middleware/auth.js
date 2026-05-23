@@ -1,35 +1,48 @@
-const jwt = require('jsonwebtoken');
+// JWT auth middleware. Verifies the bearer access token and attaches req.user.
 
-const JWT_SECRET = process.env.JWT_SECRET || (process.env.NODE_ENV === 'production'
-  ? (() => { throw new Error('JWT_SECRET env var is required in production'); })()
-  : 'mainstreet-dev-secret-change-me');
+const { verifyAccessToken } = require('../services/tokens');
+const { UnauthorizedError, ForbiddenError } = require('../utils/errors');
+const db = require('../db');
 
-function signToken(user) {
-  return jwt.sign(
-    { id: user.id, email: user.email, role: user.role },
-    JWT_SECRET,
-    { expiresIn: '14d' }
-  );
-}
-
-function requireAuth(req, res, next) {
-  const header = req.headers.authorization || '';
-  const token = header.startsWith('Bearer ') ? header.slice(7) : null;
-  if (!token) return res.status(401).json({ error: 'Missing token' });
+async function requireAuth(req, res, next) {
   try {
-    req.user = jwt.verify(token, JWT_SECRET);
+    const header = req.headers.authorization || '';
+    const token = header.startsWith('Bearer ') ? header.slice(7) : null;
+    if (!token) throw new UnauthorizedError('Missing access token');
+
+    let payload;
+    try { payload = verifyAccessToken(token); }
+    catch { throw new UnauthorizedError('Invalid or expired access token'); }
+
+    // Ensure the user still exists and isn't deleted
+    const user = await db.prepare('SELECT id, email, role, full_name, email_verified, deleted_at FROM users WHERE id = ?').get(payload.id);
+    if (!user || user.deleted_at) throw new UnauthorizedError('User no longer exists');
+
+    req.user = {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      fullName: user.full_name,
+      emailVerified: !!user.email_verified,
+    };
     next();
-  } catch (err) {
-    return res.status(401).json({ error: 'Invalid token' });
-  }
+  } catch (err) { next(err); }
 }
 
 function requireRole(role) {
   return (req, res, next) => {
-    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
-    if (req.user.role !== role) return res.status(403).json({ error: `${role} role required` });
+    if (!req.user) return next(new UnauthorizedError());
+    if (req.user.role !== role) return next(new ForbiddenError(`${role} role required`));
     next();
   };
 }
 
-module.exports = { signToken, requireAuth, requireRole, JWT_SECRET };
+function requireVerifiedEmail(req, res, next) {
+  if (!req.user) return next(new UnauthorizedError());
+  if (!req.user.emailVerified) {
+    return next(new ForbiddenError('Email verification required. Check your inbox for the verification link.'));
+  }
+  next();
+}
+
+module.exports = { requireAuth, requireRole, requireVerifiedEmail };
